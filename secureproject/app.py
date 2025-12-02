@@ -1,23 +1,46 @@
 # app.py
-from flask import Flask
+from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
-import psycopg2
+from flask_cors import CORS
 
-app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'super-secret-key'
-jwt = JWTManager(app)
-
-def get_db():
-    return psycopg2.connect(
-        dbname="securedb",
-        user="secureuser",
-        password="securepass",
-        host="localhost"
-    )
-
-# import blueprints
 from auth import auth_bp
 from patients import patients_bp
+
+app = Flask(__name__)
+
+# SECRET
+app.config["JWT_SECRET_KEY"] = "super-secret-change-me"
+
+# JWT CONFIG — HEADERS ONLY
+app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+app.config["JWT_HEADER_NAME"] = "Authorization"
+app.config["JWT_HEADER_TYPE"] = "Bearer"
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+
+# Allow Vite frontend
+CORS(app, origins=["http://localhost:5173", "http://127.0.0.1:5173"], supports_credentials=True)
+
+jwt = JWTManager(app)
+
+# --------- ERROR HANDLERS ---------
+
+@jwt.invalid_token_loader
+def invalid_token_callback(msg):
+    return jsonify({"msg": f"Invalid token: {msg}"}), 422
+
+@jwt.unauthorized_loader
+def missing_token_callback(msg):
+    return jsonify({"msg": f"Missing token: {msg}"}), 401
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({"msg": "Token expired"}), 401
+
+@app.errorhandler(422)
+def handle_422(e):
+    return jsonify({"msg": "Unprocessable", "details": str(e)}), 422
+
+# --------- BLUEPRINTS ---------
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(patients_bp, url_prefix="/patients")
