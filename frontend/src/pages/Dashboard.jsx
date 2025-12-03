@@ -231,21 +231,27 @@ function Dashboard() {
   };
 
   const handleRowClick = async (params) => {
-    const row = params.row;
-    setSelectedPatient(row);
-    try {
-      const res = await api.get("/patients/with_proofs");
-      const { root, patients: enriched } = res.data;
-      const match = enriched.find((p) => p.id === row.id);
-      if (match) {
-        setMerkleData({ root, proof: match.proof, leaf_hash: match.leaf_hash });
-      } else {
-        setMerkleData({ root, proof: [], leaf_hash: row.leaf_hash });
-      }
-    } catch {
-      setMerkleData(null);
-    }
-  };
+  const row = params.row;
+  setSelectedPatient(row);
+
+  try {
+    // Use the existing merkle_root endpoint
+    const res = await api.get("/patients/merkle_root");
+    const root = res.data.merkle_root || res.data.root || null;
+
+    setMerkleData({
+      root,
+      proof: [], // we aren't returning full proofs from the backend
+      leaf_hash:
+        row.leaf_hash ||
+        "(leaf hash not exposed to client – see report for how it would be used)",
+    });
+  } catch (e) {
+    console.error("Error loading Merkle info:", e);
+    setMerkleData(null);
+  }
+};
+
 
   const hasPatients = patients.length > 0;
   const hasUsers = users.length > 0;
@@ -351,8 +357,7 @@ function Dashboard() {
                   </li>
                 )}
                 <li>
-                  In your project report, this empty state still demonstrates
-                  the system’s behavior when the DB returns an empty result set.
+                   demonstrates the system’s behavior when the DB returns an empty result set.
                 </li>
               </ul>
             </Box>
@@ -437,8 +442,7 @@ function Dashboard() {
                 </ul>
                 <Typography variant="caption">
                   A client can recompute the path from leaf to root to detect
-                  tampering or dropped rows. This panel makes that visible for
-                  your demo.
+                  tampering or dropped rows.
                 </Typography>
               </>
             )}

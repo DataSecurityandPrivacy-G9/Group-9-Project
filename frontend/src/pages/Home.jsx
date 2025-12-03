@@ -9,7 +9,7 @@ function Home() {
         Secure DBaaS Demo
       </Typography>
       <Typography gutterBottom>
-        This UI sits on top of your Flask + PostgreSQL backend to demonstrate:
+        This UI sits on top of Flask + PostgreSQL backend to demonstrate:
       </Typography>
       <List>
         <ListItem>
