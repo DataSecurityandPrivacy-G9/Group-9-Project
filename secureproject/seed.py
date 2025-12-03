@@ -1,4 +1,6 @@
 # seed.py
+# -*- coding: utf-8 -*-
+
 import random
 import psycopg2
 
